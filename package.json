@@ -1,0 +1,11 @@
+{
+  "name": "agentic-dating",
+  "private": true,
+  "workspaces": ["apps/*", "packages/*"],
+  "scripts": {
+    "dev": "bun run --filter './apps/*' dev",
+    "typecheck": "bun run --filter '*' typecheck",
+    "db:up": "docker compose up -d db",
+    "db:migrate": "bun run --filter api db:migrate"
+  }
+}

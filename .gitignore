@@ -1,0 +1,8 @@
+node_modules
+dist
+.env
+.env.local
+apps/api/generated
+data/raw
+.DS_Store
+*.log

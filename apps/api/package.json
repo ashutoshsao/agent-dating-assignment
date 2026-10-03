@@ -1,0 +1,30 @@
+{
+  "name": "api",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun --watch src/index.ts",
+    "start": "bun src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "postinstall": "prisma generate"
+  },
+  "dependencies": {
+    "@ai-sdk/openai": "^4.0.83",
+    "@dating/shared": "workspace:*",
+    "@prisma/adapter-pg": "^7",
+    "@prisma/client": "^7",
+    "ai": "^7.0.127",
+    "cors": "^2.8.6",
+    "dotenv": "^18.0.5",
+    "express": "^5.2.1"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.4.2",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "prisma": "^7",
+    "typescript": "^7.0.2"
+  }
+}
