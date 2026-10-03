@@ -1,4 +1,5 @@
-export const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3001";
+// Same origin in production (API serves the web app); separate port in dev
+export const API_URL = import.meta.env.VITE_API_URL ?? (import.meta.env.DEV ? "http://localhost:3001" : "");
 
 export class ApiError extends Error {
   constructor(public status: number, public code: string, message: string) {

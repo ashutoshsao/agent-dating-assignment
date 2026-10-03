@@ -50,8 +50,14 @@ datesRouter.post("/:id/rerun", async (req, res) => {
 export const roundsRouter = Router();
 
 roundsRouter.post("/", async (req, res) => {
-  const body = z.object({ personId: z.string().optional(), k: z.number().int().min(1).max(10).optional(), force: z.boolean().optional() }).parse(req.body ?? {});
-  res.json(await startRound(body));
+  const parsed = z.object({ personId: z.string().optional(), k: z.number().int().min(1).max(6).optional(), force: z.boolean().optional() }).safeParse(req.body ?? {});
+  if (!parsed.success) return res.status(400).json({ error: "invalid_input" });
+  const admin = process.env.ADMIN_TOKEN && req.get("x-admin-token") === process.env.ADMIN_TOKEN;
+  // Without force, a round only runs dates that haven't happened yet; re-running everything is admin-only
+  if (parsed.data.force && process.env.NODE_ENV === "production" && !admin) {
+    return res.status(403).json({ error: "forbidden", message: "Re-running every date is admin-only." });
+  }
+  res.json(await startRound(parsed.data));
 });
 
 export const rankingsRouter = Router();

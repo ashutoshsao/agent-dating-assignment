@@ -6,3 +6,4 @@ apps/api/generated
 data/raw
 .DS_Store
 *.log
+.logs
