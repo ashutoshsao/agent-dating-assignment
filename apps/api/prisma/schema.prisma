@@ -7,11 +7,57 @@ datasource db {
   provider = "postgresql"
 }
 
+enum PersonStatus {
+  pending
+  scraped
+  analyzed
+  error
+}
+
+enum SourceKind {
+  linkedin
+  instagram
+}
+
+enum ScrapeStatus {
+  ok
+  blocked
+  private
+  not_found
+  manual
+}
+
 model Person {
-  id           String   @id @default(cuid())
+  id           String       @id @default(cuid())
   name         String
-  linkedinUrl  String   @unique
-  instagramUrl String   @unique
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  linkedinUrl  String       @unique
+  instagramUrl String       @unique
+  avatarSeed   String
+  status       PersonStatus @default(pending)
+  sources      Source[]
+  analysis     Analysis?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+}
+
+model Source {
+  id        String       @id @default(cuid())
+  personId  String
+  person    Person       @relation(fields: [personId], references: [id], onDelete: Cascade)
+  kind      SourceKind
+  status    ScrapeStatus
+  data      Json?
+  fetchedAt DateTime     @default(now())
+
+  @@unique([personId, kind])
+}
+
+model Analysis {
+  id        String   @id @default(cuid())
+  personId  String   @unique
+  person    Person   @relation(fields: [personId], references: [id], onDelete: Cascade)
+  persona   Json
+  trace     Json
+  model     String
+  createdAt DateTime @default(now())
 }

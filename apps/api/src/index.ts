@@ -3,6 +3,7 @@ import cors from "cors";
 import type { Health } from "@dating/shared";
 import { prisma } from "./db";
 import { pingLlm } from "./llm";
+import { peopleRouter } from "./routes/people";
 
 const app = express();
 app.use(cors({ origin: process.env.WEB_ORIGIN ?? "http://localhost:5173" }));
@@ -14,6 +15,8 @@ app.get("/health", async (_req, res) => {
   const body: Health = { ok: db === "ok" && llm === "ok", db, llm };
   res.json(body);
 });
+
+app.use("/api/people", peopleRouter);
 
 const port = Number(process.env.PORT ?? 3001);
 app.listen(port, () => console.log(`api on http://localhost:${port}`));

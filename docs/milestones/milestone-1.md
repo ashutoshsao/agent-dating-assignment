@@ -43,16 +43,16 @@ Profile image URLs are discarded at parse time — never stored.
 - `POST /api/people/:id/rescrape` → refresh both sources
 
 ## Todos
-- [ ] Shared Zod schemas: `LinkedInData`, `InstagramData`, `ScrapeStatus`, `CreatePersonInput`
-- [ ] URL normalization: `normalizeLinkedIn(url) → https://www.linkedin.com/in/<slug>`, `normalizeInstagram(url) → username`
-- [ ] `apps/api/src/scrapers/linkedin.ts`: fetch + JSON-LD parse; detect authwall/redirect → `blocked`; 404 → `not_found`
-- [ ] `apps/api/src/scrapers/instagram.ts`: Googlebot HTML parse (og meta + embedded JSON); fallback to `web_profile_info`; `is_private` → `private`
-- [ ] Polite fetching: concurrency 2 (`p-limit`), 1–2s jitter, 1 retry with backoff
-- [ ] Prisma: `Person` + `Source` models, migration
-- [ ] Routes above in `apps/api/src/routes/people.ts`
-- [ ] Batch script `apps/api/scripts/scrape.ts`: reads `data/people.json` (`[{ linkedinUrl, instagramUrl }]`), scrapes all, skips cached unless `--force`
-- [ ] Find 25 real people with a LinkedIn + public Instagram (founders, creators, tech folks with active public presence on both) → `data/people.json`
-- [ ] Unit tests (`bun test`) for both parsers against saved HTML fixtures (fixtures gitignored under `data/raw`, tests skip if absent)
+- [x] Shared Zod schemas: `LinkedInData`, `InstagramData`, `ScrapeStatus`, `CreatePersonInput`
+- [x] URL normalization: `normalizeLinkedIn(url) → https://www.linkedin.com/in/<slug>`, `normalizeInstagram(url) → username`
+- [x] `apps/api/src/scrapers/linkedin.ts`: fetch + JSON-LD parse; detect authwall/redirect → `blocked`; 404 → `not_found`
+- [x] `apps/api/src/scrapers/instagram.ts`: Googlebot HTML parse (og meta + embedded JSON); fallback to `web_profile_info`; `is_private` → `private`
+- [x] Polite fetching: concurrency 2 (`p-limit`), 1–2s jitter, 1 retry with backoff
+- [x] Prisma: `Person` + `Source` models, migration
+- [x] Routes above in `apps/api/src/routes/people.ts`
+- [x] Batch script `apps/api/scripts/scrape.ts`: reads `data/people.json` (`[{ linkedinUrl, instagramUrl }]`), scrapes all, skips cached unless `--force`
+- [x] Find 25 real people with a LinkedIn + public Instagram (founders, creators, tech folks with active public presence on both) → `data/people.json`
+- [x] Unit tests (`bun test`) for both parsers against saved HTML fixtures (fixtures gitignored under `data/raw`, tests skip if absent)
 
 ## Done when
 - `POST /api/people` with 3 real link pairs returns populated LinkedIn + Instagram data

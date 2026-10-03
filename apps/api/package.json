@@ -7,7 +7,7 @@
     "start": "bun src/index.ts",
     "typecheck": "tsc --noEmit",
     "db:generate": "prisma generate",
-    "db:migrate": "prisma migrate dev",
+    "db:migrate": "prisma migrate dev && prisma generate",
     "postinstall": "prisma generate"
   },
   "dependencies": {
@@ -18,7 +18,9 @@
     "ai": "^7.0.127",
     "cors": "^2.8.6",
     "dotenv": "^18.0.5",
-    "express": "^5.2.1"
+    "express": "^5.2.1",
+    "p-limit": "^7.3.3",
+    "zod": "^4"
   },
   "devDependencies": {
     "@types/bun": "^1.4.2",
