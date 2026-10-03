@@ -36,6 +36,9 @@ model Person {
   status       PersonStatus @default(pending)
   sources      Source[]
   analysis     Analysis?
+  datesAsA     Date[]       @relation("DatesAsA")
+  datesAsB     Date[]       @relation("DatesAsB")
+  debriefs     Debrief[]
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
 }
@@ -60,4 +63,53 @@ model Analysis {
   trace     Json
   model     String
   createdAt DateTime @default(now())
+}
+
+enum DateStatus {
+  scheduled
+  live
+  done
+  error
+}
+
+model Date {
+  id        String     @id @default(cuid())
+  aId       String
+  bId       String
+  a         Person     @relation("DatesAsA", fields: [aId], references: [id], onDelete: Cascade)
+  b         Person     @relation("DatesAsB", fields: [bId], references: [id], onDelete: Cascade)
+  status    DateStatus @default(scheduled)
+  venue     Json?
+  prescreen Float
+  mutual    Float?
+  turns     Turn[]
+  debriefs  Debrief[]
+  createdAt DateTime   @default(now())
+
+  @@unique([aId, bId])
+}
+
+model Turn {
+  id        String  @id @default(cuid())
+  dateId    String
+  date      Date    @relation(fields: [dateId], references: [id], onDelete: Cascade)
+  idx       Int
+  speakerId String?
+  message   String
+  thought   String?
+  interest  Float?
+
+  @@unique([dateId, idx])
+}
+
+model Debrief {
+  id       String @id @default(cuid())
+  dateId   String
+  date     Date   @relation(fields: [dateId], references: [id], onDelete: Cascade)
+  personId String
+  person   Person @relation(fields: [personId], references: [id], onDelete: Cascade)
+  score    Float
+  data     Json
+
+  @@unique([dateId, personId])
 }

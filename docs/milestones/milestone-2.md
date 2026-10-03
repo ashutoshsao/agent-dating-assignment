@@ -56,14 +56,14 @@ Persona = {
 - `/people/:id` — profile page: header (avatar, name, headline, source links + scrape status), "Agent reading" timeline (live while analyzing, from trace afterwards), summary, needs, hobbies, interests, values (chips with evidence popovers, ✓ verified), personality (Big Five bars, communication, humor), lifestyle, looking for / dealbreakers, ideal first date, agent voice sample
 
 ## Todos
-- [ ] `generateJson` helper with repair retry (`apps/api/src/llm.ts`)
-- [ ] Shared `Persona` schema + DTO additions
-- [ ] Prisma `Analysis` model + migration
-- [ ] `apps/api/src/agents/analyze.ts`: 3-step pipeline + evidence check, emits events via callback
-- [ ] SSE helper + `POST /api/people/:id/analyze`
-- [ ] Batch script `scripts/analyze.ts` (concurrency 4, skip analyzed unless `--force`)
-- [ ] Web: home (form + grid), profile page, live analysis timeline
-- [ ] Run analysis for all scraped people
+- [x] `generateJson` helper with repair retry (`apps/api/src/llm.ts`)
+- [x] Shared `Persona` schema + DTO additions
+- [x] Prisma `Analysis` model + migration
+- [x] `apps/api/src/agents/analyze.ts`: 3-step pipeline + evidence check, emits events via callback
+- [x] SSE helper + `POST /api/people/:id/analyze`
+- [x] Batch script `scripts/analyze.ts` (concurrency 4, skip analyzed unless `--force`)
+- [x] Web: home (form + grid), profile page, live analysis timeline
+- [x] Run analysis for all scraped people
 
 ## Done when
 - Paste links in the UI → scrape → live reading steps → full profile page

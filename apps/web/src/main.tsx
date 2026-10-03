@@ -8,6 +8,8 @@ import "./index.css";
 import { Layout } from "./components/Layout";
 import Home from "./pages/Home";
 import Profile from "./pages/Profile";
+import Dates from "./pages/Dates";
+import DateView from "./pages/DateView";
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { refetchOnWindowFocus: false } } });
 
@@ -20,6 +22,8 @@ createRoot(document.getElementById("root")!).render(
             <Route element={<Layout />}>
               <Route path="/" element={<Home />} />
               <Route path="/people/:id" element={<Profile />} />
+              <Route path="/dates" element={<Dates />} />
+              <Route path="/dates/:id" element={<DateView />} />
             </Route>
           </Routes>
         </BrowserRouter>

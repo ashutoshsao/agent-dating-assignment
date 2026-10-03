@@ -131,3 +131,77 @@ export type AnalysisEvent =
   | { type: "step"; step: AnalysisStep; status: "done"; title: string; notes: string; ms: number }
   | { type: "persona"; persona: Persona }
   | { type: "error"; message: string };
+
+// ---------- M3: Dates ----------
+export const VenueSchema = z.object({
+  venue: z.string(),
+  setting: z.string(),
+  why: z.string(),
+});
+export type Venue = z.infer<typeof VenueSchema>;
+
+export const TurnOutputSchema = z.object({
+  thought: z.string(),
+  message: z.string(),
+  interest: z.number().min(0).max(10),
+  wantsToLeave: z.boolean(),
+});
+export type TurnOutput = z.infer<typeof TurnOutputSchema>;
+
+const ten = z.number().min(0).max(10);
+export const DebriefOutputSchema = z.object({
+  score: ten,
+  chemistry: ten,
+  valuesAlignment: ten,
+  lifestyleFit: ten,
+  wouldSeeAgain: z.boolean(),
+  highlights: z.array(z.string()),
+  concerns: z.array(z.string()),
+  reportToPerson: z.string(),
+});
+export type DebriefOutput = z.infer<typeof DebriefOutputSchema>;
+
+export type DateStatus = "scheduled" | "live" | "done" | "error";
+
+export interface TurnDTO {
+  idx: number;
+  speakerId: string | null;
+  message: string;
+  thought?: string | null;
+  interest?: number | null;
+}
+
+export interface DebriefDTO {
+  personId: string;
+  score: number;
+  data: DebriefOutput;
+}
+
+export interface DatePersonDTO {
+  id: string;
+  name: string;
+  avatarSeed: string;
+  headline?: string;
+}
+
+export interface DateDTO {
+  id: string;
+  status: DateStatus;
+  a: DatePersonDTO;
+  b: DatePersonDTO;
+  venue: Venue | null;
+  prescreen: number;
+  mutual: number | null;
+  createdAt: string;
+  turns?: TurnDTO[];
+  debriefs?: DebriefDTO[];
+}
+
+export type DateEvent =
+  | { type: "status"; status: DateStatus }
+  | { type: "venue"; venue: Venue }
+  | { type: "typing"; speakerId: string | null }
+  | { type: "turn"; turn: TurnDTO }
+  | { type: "debrief"; debrief: DebriefDTO }
+  | { type: "done"; mutual: number }
+  | { type: "error"; message: string };
