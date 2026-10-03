@@ -1,8 +1,10 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { RankList } from "@/components/RankList";
 import { useEffect, useRef, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router";
-import { ArrowLeft, ExternalLink, RefreshCw, Sparkles } from "lucide-react";
-import type { AnalysisEvent, AnalysisStep, AnalysisTraceStep, Persona, PersonDTO } from "@dating/shared";
+import { ArrowLeft, ExternalLink, HeartHandshake, RefreshCw, Sparkles } from "lucide-react";
+import type { AnalysisEvent, AnalysisStep, AnalysisTraceStep, Persona, PersonDTO, RankingDTO } from "@dating/shared";
 import { api, streamSse } from "@/lib/api";
 import { Avatar } from "@/components/Avatar";
 import { AnalysisTimeline } from "@/components/AnalysisTimeline";
@@ -129,6 +131,19 @@ export default function Profile() {
   const [live, setLive] = useState<TraceState | null>(null);
   const [error, setError] = useState<string | null>(null);
   const started = useRef(false);
+  const { data: ranking } = useQuery({
+    queryKey: ["rankings", id],
+    queryFn: () => api<RankingDTO>(`/api/rankings/${id}`),
+    enabled: person?.status === "analyzed",
+    refetchInterval: 8000,
+  });
+  const sendOnDates = useMutation({
+    mutationFn: () => api<{ scheduled: number }>("/api/rounds", { method: "POST", body: JSON.stringify({ personId: id }) }),
+    onSuccess: (r) => {
+      toast.success(r.scheduled ? `${r.scheduled} dates starting — watch them on the Dates tab` : "Already dated their top matches");
+      qc.invalidateQueries({ queryKey: ["rankings", id] });
+    },
+  });
 
   const runAnalysis = async () => {
     started.current = true;
@@ -186,9 +201,14 @@ export default function Profile() {
           </div>
         </div>
         {persona && !live && (
-          <Button variant="outline" className="rounded-full" onClick={runAnalysis}>
-            <RefreshCw className="size-4" /> Re-analyze
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" className="rounded-full" onClick={runAnalysis}>
+              <RefreshCw className="size-4" /> Re-analyze
+            </Button>
+            <Button className="rounded-full" onClick={() => sendOnDates.mutate()} disabled={sendOnDates.isPending}>
+              <HeartHandshake className="size-4" /> Send on dates
+            </Button>
+          </div>
         )}
       </header>
 
@@ -208,6 +228,13 @@ export default function Profile() {
             </div>
           )}
           {error && <p className="text-sm text-destructive">{error}</p>}
+          {ranking && ranking.matches.length > 0 && (
+            <div className="mt-6 grid gap-3">
+              <h3 className="font-serif text-2xl">Best matches</h3>
+              <RankList personId={ranking.person.id} rows={ranking.matches.slice(0, 5)} compact />
+              <Link to={`/rankings?p=${ranking.person.id}`} className="text-sm text-muted-foreground underline-offset-4 hover:underline">Full ranking →</Link>
+            </div>
+          )}
         </aside>
         <div>
           {persona && !live ? (

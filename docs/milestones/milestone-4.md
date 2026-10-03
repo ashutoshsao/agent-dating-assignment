@@ -22,10 +22,10 @@ Mutual match = both `wouldSeeAgain`.
 - Profile page: "Their best matches" (top 3) + "Send on dates" button.
 
 ## Todos
-- [ ] `rankings.ts` service + routes
-- [ ] Shared `RankRow` / `RankingDTO`
-- [ ] `/rankings` page
-- [ ] Profile: top matches + Send on dates
+- [x] `rankings.ts` service + routes
+- [x] Shared `RankRow` / `RankingDTO`
+- [x] `/rankings` page
+- [x] Profile: top matches + Send on dates
 
 ## Done when
 - Every analyzed person has a full ranked list; clicking a row opens the date

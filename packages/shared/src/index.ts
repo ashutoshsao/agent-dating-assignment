@@ -205,3 +205,24 @@ export type DateEvent =
   | { type: "debrief"; debrief: DebriefDTO }
   | { type: "done"; mutual: number }
   | { type: "error"; message: string };
+
+// ---------- M4: Rankings ----------
+export interface RankRow {
+  rank: number;
+  other: DatePersonDTO;
+  dated: boolean;
+  dateId?: string;
+  dateStatus?: DateStatus;
+  mutual?: number;
+  myScore?: number;
+  theirScore?: number;
+  iWouldSeeAgain?: boolean;
+  theyWouldSeeAgain?: boolean;
+  report?: string;
+  estimate: number; // pre-screen fit, 0–100
+}
+
+export interface RankingDTO {
+  person: DatePersonDTO;
+  matches: RankRow[];
+}

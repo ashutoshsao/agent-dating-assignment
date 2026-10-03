@@ -10,6 +10,7 @@ import Home from "./pages/Home";
 import Profile from "./pages/Profile";
 import Dates from "./pages/Dates";
 import DateView from "./pages/DateView";
+import Rankings from "./pages/Rankings";
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { refetchOnWindowFocus: false } } });
 
@@ -24,6 +25,7 @@ createRoot(document.getElementById("root")!).render(
               <Route path="/people/:id" element={<Profile />} />
               <Route path="/dates" element={<Dates />} />
               <Route path="/dates/:id" element={<DateView />} />
+              <Route path="/rankings" element={<Rankings />} />
             </Route>
           </Routes>
         </BrowserRouter>

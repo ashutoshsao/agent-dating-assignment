@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { z } from "zod";
 import { bus } from "../bus";
+import { computeRankings } from "../rankings";
 import { getDate, listDates, scheduleDate, startDate, startRound } from "../dates";
 
 export const datesRouter = Router();
@@ -51,4 +52,16 @@ export const roundsRouter = Router();
 roundsRouter.post("/", async (req, res) => {
   const body = z.object({ personId: z.string().optional(), k: z.number().int().min(1).max(10).optional(), force: z.boolean().optional() }).parse(req.body ?? {});
   res.json(await startRound(body));
+});
+
+export const rankingsRouter = Router();
+
+rankingsRouter.get("/", async (_req, res) => {
+  res.json(await computeRankings());
+});
+
+rankingsRouter.get("/:personId", async (req, res) => {
+  const [r] = await computeRankings(req.params.personId);
+  if (!r) return res.status(404).json({ error: "not_found" });
+  res.json(r);
 });
