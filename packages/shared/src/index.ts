@@ -63,7 +63,11 @@ export interface PersonDTO {
   instagramUrl: string;
   avatarSeed: string;
   status: PersonStatus;
+  /** true when the current visitor added this person (demo people are read-only) */
+  owned: boolean;
   headline?: string;
+  /** persona summary (list view) */
+  summary?: string;
   sources?: SourceDTO[];
   persona?: Persona;
   trace?: AnalysisTraceStep[];
@@ -182,6 +186,7 @@ export interface DatePersonDTO {
   name: string;
   avatarSeed: string;
   headline?: string;
+  owned?: boolean;
 }
 
 export interface DateDTO {
@@ -193,6 +198,8 @@ export interface DateDTO {
   prescreen: number;
   mutual: number | null;
   createdAt: string;
+  /** true when one side belongs to the current visitor (demo dates are read-only) */
+  owned: boolean;
   turns?: TurnDTO[];
   debriefs?: DebriefDTO[];
 }

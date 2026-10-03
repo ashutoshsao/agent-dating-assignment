@@ -1,12 +1,10 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router";
-import { toast } from "sonner";
-import { HeartHandshake, Loader2 } from "lucide-react";
+import { HeartHandshake } from "lucide-react";
 import type { DateDTO } from "@dating/shared";
 import { api } from "@/lib/api";
 import { Avatar } from "@/components/Avatar";
 import { ScoreRing } from "@/components/ScoreRing";
-import { Button } from "@/components/ui/button";
 
 function DateCard({ d }: { d: DateDTO }) {
   return (
@@ -35,18 +33,10 @@ function DateCard({ d }: { d: DateDTO }) {
 }
 
 export default function Dates() {
-  const qc = useQueryClient();
   const { data: dates, isLoading } = useQuery({
     queryKey: ["dates"],
     queryFn: () => api<DateDTO[]>("/api/dates"),
     refetchInterval: (q) => (q.state.data?.some((d) => d.status === "live" || d.status === "scheduled") ? 2500 : false),
-  });
-  const round = useMutation({
-    mutationFn: () => api<{ scheduled: number }>("/api/rounds", { method: "POST", body: "{}" }),
-    onSuccess: (r) => {
-      toast.success(r.scheduled ? `${r.scheduled} dates are starting` : "Everyone has already met their top matches");
-      qc.invalidateQueries({ queryKey: ["dates"] });
-    },
   });
 
   const live = dates?.filter((d) => d.status === "live") ?? [];
@@ -62,15 +52,15 @@ export default function Dates() {
             Each agent dates its person's best-fit matches. They talk, think privately, and report back.
           </p>
         </div>
-        <Button size="lg" className="rounded-full" onClick={() => round.mutate()} disabled={round.isPending}>
-          {round.isPending ? <Loader2 className="size-4 animate-spin" /> : <HeartHandshake className="size-4" />} Run a dating round
-        </Button>
+        <Link to="/" className="inline-flex items-center gap-2 self-start rounded-full bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground sm:self-auto">
+          <HeartHandshake className="size-4" /> Add someone & send them on dates
+        </Link>
       </section>
 
       {isLoading ? (
         <div className="h-40 animate-pulse rounded-xl bg-muted" />
       ) : !dates?.length ? (
-        <p className="rounded-xl border border-dashed p-8 text-center text-muted-foreground">No dates yet. Run a round to send every agent out.</p>
+        <p className="rounded-xl border border-dashed p-8 text-center text-muted-foreground">No dates yet. Add someone on the home page and send them on dates from their profile.</p>
       ) : (
         <div className="grid gap-10">
           {live.length > 0 && (

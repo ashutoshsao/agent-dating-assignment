@@ -10,7 +10,7 @@ import {
   type Venue,
 } from "@dating/shared";
 import { prisma } from "../db";
-import { generateJson, model } from "../llm";
+import { generateJson, type Llm } from "../llm";
 import { bus } from "../bus";
 
 const TURNS = 10;
@@ -61,8 +61,8 @@ Your job:
 type Transcript = { speaker: string; message: string }[];
 const render = (t: Transcript) => t.map((x) => `${x.speaker}: ${x.message}`).join("\n");
 
-async function pickVenue(a: Side, b: Side): Promise<Venue> {
-  return generateJson({
+async function pickVenue(llm: Llm, a: Side, b: Side): Promise<Venue> {
+  return generateJson(llm, {
     schema: VenueSchema,
     system: `You are a thoughtful matchmaker planning a first date between two people. Pick a specific, real-feeling venue and activity that suits BOTH of them (use their hobbies, lifestyle and ideal first dates). "setting" is 1–2 vivid sentences of scene-setting. "why" explains the choice in one sentence.`,
     prompt: `Person A: ${a.name}\n${personaBrief(a.persona)}\nIdeal first date: ${a.persona.idealFirstDate}\n\nPerson B: ${b.name}\n${personaBrief(b.persona)}\nIdeal first date: ${b.persona.idealFirstDate}`,
@@ -70,9 +70,9 @@ async function pickVenue(a: Side, b: Side): Promise<Venue> {
   });
 }
 
-async function twist(venue: Venue, t: Transcript): Promise<string> {
+async function twist(llm: Llm, venue: Venue, t: Transcript): Promise<string> {
   const { text } = await generateText({
-    model,
+    model: llm.model,
     system: `You narrate a first date. Write ONE short sentence (max 25 words), in present tense, describing a small real-world moment at the venue that gives the two people something to react to (weather, a stranger, a song, a menu mix-up, a dog). No dialogue. Don't resolve anything.`,
     prompt: `Venue: ${venue.venue}. ${venue.setting}\n\nConversation so far:\n${render(t)}`,
     temperature: 0.9,
@@ -81,8 +81,8 @@ async function twist(venue: Venue, t: Transcript): Promise<string> {
   return text.trim().replace(/^"|"$/g, "");
 }
 
-async function debrief(me: Side, other: Side, venue: Venue, t: Transcript) {
-  return generateJson({
+async function debrief(llm: Llm, me: Side, other: Side, venue: Venue, t: Transcript) {
+  return generateJson(llm, {
     schema: DebriefOutputSchema,
     system: `You are ${me.name}'s dating agent. The date is over. Write your PRIVATE debrief for ${me.name}, judged strictly against ${me.name}'s needs, values, lifestyle and dealbreakers — not against politeness. Be candid; a pleasant but mismatched date should score low. Scores 0–10. "reportToPerson" is a short, personal note addressed to ${me.name} (2–4 sentences, second person), citing specific moments from the date.`,
     prompt: `Who you represent:\n${personaBrief(me.persona)}\n\nYour date: ${publicCard(other)}\nVenue: ${venue.venue}\n\nTranscript:\n${render(t)}`,
@@ -91,7 +91,7 @@ async function debrief(me: Side, other: Side, venue: Venue, t: Transcript) {
 }
 
 /** Run one full date between a and b, persisting turns and publishing live events. */
-export async function runDate(dateId: string): Promise<number> {
+export async function runDate(dateId: string, llm: Llm): Promise<number> {
   const date = await prisma.date.findUniqueOrThrow({
     where: { id: dateId },
     include: { a: { include: { analysis: true } }, b: { include: { analysis: true } } },
@@ -109,7 +109,7 @@ export async function runDate(dateId: string): Promise<number> {
     await prisma.date.update({ where: { id: dateId }, data: { status: "live", mutual: null } });
     emit({ type: "status", status: "live" });
 
-    const venue = await pickVenue(A, B);
+    const venue = await pickVenue(llm, A, B);
     await prisma.date.update({ where: { id: dateId }, data: { venue } });
     emit({ type: "venue", venue });
 
@@ -124,13 +124,13 @@ export async function runDate(dateId: string): Promise<number> {
     for (let i = 0; i < TURNS; i++) {
       if (i === TWIST_AT) {
         emit({ type: "typing", speakerId: null });
-        const moment = await twist(venue, transcript);
+        const moment = await twist(llm, venue, transcript);
         transcript.push({ speaker: "(Narrator)", message: moment });
         await save({ idx: idx++, speakerId: null, message: moment });
       }
       const [me, other] = i % 2 === 0 ? [A, B] : [B, A];
       emit({ type: "typing", speakerId: me.id });
-      const out = await generateJson({
+      const out = await generateJson(llm, {
         schema: TurnOutputSchema,
         system: agentSystem(me, other, venue),
         prompt:
@@ -144,7 +144,7 @@ export async function runDate(dateId: string): Promise<number> {
       if (out.wantsToLeave && ++leaves[me.id]! >= 2) break;
     }
 
-    const [dA, dB] = await Promise.all([debrief(A, B, venue, transcript), debrief(B, A, venue, transcript)]);
+    const [dA, dB] = await Promise.all([debrief(llm, A, B, venue, transcript), debrief(llm, B, A, venue, transcript)]);
     for (const [s, d] of [[A, dA], [B, dB]] as const) {
       const dto: DebriefDTO = { personId: s.id, score: d.score, data: d };
       await prisma.debrief.create({ data: { dateId, personId: s.id, score: d.score, data: d } });

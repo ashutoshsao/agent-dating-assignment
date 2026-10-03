@@ -1,33 +1,35 @@
 import type { DatePersonDTO, DebriefOutput, Persona, RankingDTO, RankRow } from "@dating/shared";
 import { prisma } from "./db";
 import { prescreen } from "./agents/prescreen";
+import { visibleTo } from "./visitor";
 
 const dedupe = (h?: string) => (h ? [...new Set(h.split(" · "))].join(" · ") : undefined);
 
-export async function computeRankings(onlyFor?: string): Promise<RankingDTO[]> {
-  const [people, dates] = await Promise.all([
-    prisma.person.findMany({
-      where: { status: "analyzed" },
-      include: { analysis: true, sources: { where: { kind: "linkedin" }, select: { data: true } } },
-      orderBy: { name: "asc" },
-    }),
-    prisma.date.findMany({ include: { debriefs: true } }),
-  ]);
+/** Rankings over the people visible to this visitor (demo pool + their own). */
+export async function computeRankings(vid: string | null, onlyFor?: string): Promise<RankingDTO[]> {
+  const people = await prisma.person.findMany({
+    where: { status: "analyzed", ...visibleTo(vid) },
+    include: { analysis: true, sources: { where: { kind: "linkedin" }, select: { data: true } } },
+    orderBy: { name: "asc" },
+  });
+  const ids = people.map((p) => p.id);
+  const dates = await prisma.date.findMany({ where: { aId: { in: ids }, bId: { in: ids } }, include: { debriefs: true } });
 
   const card = (p: (typeof people)[number]): DatePersonDTO => ({
     id: p.id,
     name: p.name,
     avatarSeed: p.avatarSeed,
+    owned: p.ownerId !== null,
     headline: dedupe((p.sources[0]?.data as { headline?: string } | null)?.headline),
   });
   const persona = (p: (typeof people)[number]) => p.analysis!.persona as unknown as Persona;
   const dateFor = (x: string, y: string) => dates.find((d) => (d.aId === x && d.bId === y) || (d.aId === y && d.bId === x));
 
   return people
-    .filter((p) => !onlyFor || p.id === onlyFor)
+    .filter((p) => p.analysis && (!onlyFor || p.id === onlyFor))
     .map((p) => {
       const rows: Omit<RankRow, "rank">[] = people
-        .filter((q) => q.id !== p.id)
+        .filter((q) => q.id !== p.id && q.analysis)
         .map((q) => {
           const d = dateFor(p.id, q.id);
           const estimate = Math.round(100 * prescreen(persona(p), persona(q)));

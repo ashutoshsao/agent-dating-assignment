@@ -8,13 +8,15 @@
     "typecheck": "tsc --noEmit",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev && prisma generate",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "build": "prisma generate && bun build src/app.ts --target node --format esm --outdir dist --entry-naming app.js --external pg-native"
   },
   "dependencies": {
     "@ai-sdk/openai": "^4.0.83",
     "@dating/shared": "workspace:*",
     "@prisma/adapter-pg": "^7",
     "@prisma/client": "^7",
+    "@vercel/functions": "^3.9.11",
     "ai": "^7.0.127",
     "cors": "^2.8.6",
     "dotenv": "^18.0.5",

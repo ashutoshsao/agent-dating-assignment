@@ -164,7 +164,7 @@ export default function Profile() {
   };
 
   useEffect(() => {
-    if (person && !started.current && (params.get("analyze") === "1" || person.status === "scraped") && !person.persona) runAnalysis();
+    if (person?.owned && !started.current && (params.get("analyze") === "1" || person.status === "scraped") && !person.persona) runAnalysis();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [person]);
 
@@ -200,7 +200,10 @@ export default function Profile() {
             })}
           </div>
         </div>
-        {persona && !live && (
+        {!person.owned && (
+          <span className="self-start rounded-full border px-3 py-1 font-mono text-[11px] text-muted-foreground sm:self-center">demo profile · read-only</span>
+        )}
+        {person.owned && persona && !live && (
           <div className="flex gap-2">
             <Button variant="outline" className="rounded-full" onClick={runAnalysis}>
               <RefreshCw className="size-4" /> Re-analyze
@@ -215,7 +218,7 @@ export default function Profile() {
       {persona && !live && <p className="mt-8 max-w-3xl font-serif text-2xl leading-snug">{persona.summary}</p>}
 
       <div className="mt-10 grid gap-10 lg:grid-cols-[18rem_1fr]">
-        <aside className="grid content-start gap-3">
+        <aside className="grid min-w-0 grid-cols-[minmax(0,1fr)] content-start gap-3">
           <h3 className="flex items-center gap-2 font-serif text-2xl">
             <Sparkles className="size-4 text-primary" /> Agent reading
           </h3>
@@ -224,14 +227,14 @@ export default function Profile() {
           ) : (
             <div className="rounded-xl border border-dashed p-4 text-sm text-muted-foreground">
               Not analyzed yet.
-              <Button size="sm" className="mt-3 w-full rounded-full" onClick={runAnalysis}>Analyze now</Button>
+              {person.owned && <Button size="sm" className="mt-3 w-full rounded-full" onClick={runAnalysis}>Analyze now</Button>}
             </div>
           )}
           {error && <p className="text-sm text-destructive">{error}</p>}
           {ranking && ranking.matches.length > 0 && (
             <div className="mt-6 grid gap-3">
               <h3 className="font-serif text-2xl">Best matches</h3>
-              <RankList personId={ranking.person.id} rows={ranking.matches.slice(0, 5)} compact />
+              <RankList personId={ranking.person.id} rows={ranking.matches.slice(0, 5)} compact canSend={person.owned} />
               <Link to={`/rankings?p=${ranking.person.id}`} className="text-sm text-muted-foreground underline-offset-4 hover:underline">Full ranking →</Link>
             </div>
           )}

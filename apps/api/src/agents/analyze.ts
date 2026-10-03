@@ -10,7 +10,7 @@ import {
   type Persona,
 } from "@dating/shared";
 import { prisma } from "../db";
-import { generateJson, model, MODEL_ID } from "../llm";
+import { generateJson, type Llm } from "../llm";
 import { instagramText, linkedinText } from "./sources";
 
 const READER_RULES = `Only use what is in the text. Quote short exact phrases (copied verbatim) as evidence. If something is unclear, say so instead of guessing. Write compact bullet notes, max ~180 words.`;
@@ -51,7 +51,7 @@ export function verifyEvidence(persona: Persona, texts: Record<"linkedin" | "ins
   return { total, verified };
 }
 
-export async function analyzePerson(personId: string, emit: Emit = () => {}): Promise<Persona> {
+export async function analyzePerson(personId: string, llm: Llm, emit: Emit = () => {}): Promise<Persona> {
   const person = await prisma.person.findUniqueOrThrow({ where: { id: personId }, include: { sources: true } });
   const li = person.sources.find((s) => s.kind === "linkedin")?.data as LinkedInData | null;
   const ig = person.sources.find((s) => s.kind === "instagram")?.data as InstagramData | null;
@@ -69,7 +69,7 @@ export async function analyzePerson(personId: string, emit: Emit = () => {}): Pr
   }
 
   const read = (system: string, text: string) =>
-    generateText({ model, system, prompt: `Person: ${person.name}\n\n${text}`, temperature: 0.3, maxOutputTokens: 700 }).then((r) => ({
+    generateText({ model: llm.model, system, prompt: `Person: ${person.name}\n\n${text}`, temperature: 0.3, maxOutputTokens: 700 }).then((r) => ({
       value: r.text,
       notes: r.text,
     }));
@@ -80,7 +80,7 @@ export async function analyzePerson(personId: string, emit: Emit = () => {}): Pr
   ]);
 
   const persona = await step("synthesis", "Building the persona", async () => {
-    const p = await generateJson({
+    const p = await generateJson(llm, {
       schema: PersonaSchema,
       system: SYNTHESIZER,
       prompt: `Person: ${person.name}
@@ -107,8 +107,8 @@ ${texts.instagram}`,
 
   await prisma.analysis.upsert({
     where: { personId },
-    create: { personId, persona: persona as any, trace: trace as any, model: MODEL_ID },
-    update: { persona: persona as any, trace: trace as any, model: MODEL_ID, createdAt: new Date() },
+    create: { personId, persona: persona as any, trace: trace as any, model: llm.id },
+    update: { persona: persona as any, trace: trace as any, model: llm.id, createdAt: new Date() },
   });
   await prisma.person.update({ where: { id: personId }, data: { status: "analyzed" } });
   emit({ type: "persona", persona });

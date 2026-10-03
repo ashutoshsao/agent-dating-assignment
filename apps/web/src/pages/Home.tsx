@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { ArrowRight, Loader2 } from "lucide-react";
 import type { PersonDTO } from "@dating/shared";
 import { api, ApiError } from "@/lib/api";
+import { hasKey, openSettings } from "@/lib/settings";
 import { Avatar } from "@/components/Avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,7 +44,8 @@ function AddPersonForm() {
         toast.warning(`Couldn't read ${blocked.map((b) => b.kind).join(" & ")} automatically. Paste the profile text below and retry.`);
         return;
       }
-      navigate(`/people/${p.id}?analyze=1`);
+      if (!p.owned) toast.message(`${p.name} is already in the demo pool — here's their profile.`);
+      navigate(p.owned ? `/people/${p.id}?analyze=1` : `/people/${p.id}`);
     },
     onError: (e) => toast.error(e instanceof ApiError ? ERRORS[e.code] || e.message : "Something went wrong"),
   });
@@ -54,7 +56,9 @@ function AddPersonForm() {
     <form
       onSubmit={(e) => {
         e.preventDefault();
-        if (ready) add.mutate();
+        if (!ready) return;
+        if (!hasKey()) return openSettings("Add your key to create an agent.");
+        add.mutate();
       }}
       className="rounded-2xl border bg-card p-4 sm:p-5"
     >
@@ -144,8 +148,11 @@ export default function Home() {
                 >
                   <Avatar seed={p.avatarSeed} name={p.name} />
                   <div className="min-w-0">
-                    <div className="truncate font-medium">{p.name}</div>
-                    <div className="truncate text-sm text-muted-foreground">{p.persona?.summary ?? p.headline ?? "—"}</div>
+                    <div className="flex items-center gap-2">
+                      <span className="truncate font-medium">{p.name}</span>
+                      {p.owned && <span className="shrink-0 rounded-full bg-accent px-2 py-0.5 text-[10px] text-accent-foreground">yours</span>}
+                    </div>
+                    <div className="truncate text-sm text-muted-foreground">{p.summary ?? p.headline ?? "—"}</div>
                     <div className="mt-0.5 font-mono text-[11px] text-muted-foreground">{STATUS_LABEL[p.status]}</div>
                   </div>
                 </Link>

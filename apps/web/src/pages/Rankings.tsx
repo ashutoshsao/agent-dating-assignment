@@ -83,7 +83,7 @@ export default function Rankings() {
                     <p className="text-sm text-muted-foreground">{selected.matches.filter((m) => m.dated).length} dates · best fits first</p>
                   </div>
                 </div>
-                <RankList personId={selected.person.id} rows={selected.matches} />
+                <RankList personId={selected.person.id} rows={selected.matches} canSend={selected.person.owned} />
               </section>
             )}
           </div>

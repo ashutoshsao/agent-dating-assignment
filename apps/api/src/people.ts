@@ -3,6 +3,7 @@ import { prisma } from "./db";
 import { instagramUrl, normalizeInstagram, normalizeLinkedIn } from "./scrapers/normalize";
 import { scrapeLinkedIn, type ScrapeResult } from "./scrapers/linkedin";
 import { scrapeInstagram } from "./scrapers/instagram";
+import { ForbiddenError, visibleTo } from "./visitor";
 
 export class InstagramPrivateError extends Error {}
 
@@ -21,6 +22,7 @@ export function toDTO(p: Omit<PersonWithSources, "analysis"> & { analysis?: Pers
     instagramUrl: p.instagramUrl,
     avatarSeed: p.avatarSeed,
     status: p.status,
+    owned: p.ownerId !== null,
     headline: li?.headline ? [...new Set(li.headline.split(" · "))].join(" · ") : undefined,
     sources: p.sources.map((s) => ({
       kind: s.kind,
@@ -52,12 +54,20 @@ function withManual<T extends { manualText?: string }>(
   return { status: "manual", data: { ...(res.data ?? empty()), manualText: text.trim() } };
 }
 
-export async function scrapePerson(input: CreatePersonInput & { force?: boolean }): Promise<PersonDTO> {
+/**
+ * Scrape a person into the visitor's space (ownerId) or the demo pool (ownerId null, scripts only).
+ * Links that match a demo person return the demo person as-is: no scraping, no LLM spend.
+ */
+export async function scrapePerson(input: CreatePersonInput & { force?: boolean }, ownerId: string | null): Promise<PersonDTO> {
   const linkedinUrl = normalizeLinkedIn(input.linkedinUrl);
   const username = normalizeInstagram(input.instagramUrl);
   const igUrl = instagramUrl(username);
 
-  const existing = await prisma.person.findUnique({ where: { linkedinUrl }, include: { sources: true } });
+  if (ownerId) {
+    const demo = await prisma.person.findFirst({ where: { linkedinUrl, ownerId: null }, include: { sources: true, analysis: true } });
+    if (demo) return toDTO(demo);
+  }
+  const existing = await prisma.person.findFirst({ where: { linkedinUrl, ownerId }, include: { sources: true } });
   const cachedOk =
     existing && existing.sources.length === 2 && existing.sources.every((s) => s.status === "ok" || s.status === "manual");
   if (existing && cachedOk && !input.force && !input.linkedinText && !input.instagramText) return toDTO(existing);
@@ -73,11 +83,10 @@ export async function scrapePerson(input: CreatePersonInput & { force?: boolean 
   const name = li.data?.name ?? (ig.data as InstagramData | null)?.fullName ?? slugToName(linkedinUrl);
   const ok = (s: ScrapeStatus) => s === "ok" || s === "manual";
 
-  const person = await prisma.person.upsert({
-    where: { linkedinUrl },
-    create: { name, linkedinUrl, instagramUrl: igUrl, avatarSeed: username, status: ok(li.status) && ok(ig.status) ? "scraped" : "error" },
-    update: { name, instagramUrl: igUrl, status: ok(li.status) && ok(ig.status) ? "scraped" : "error" },
-  });
+  const status = ok(li.status) && ok(ig.status) ? "scraped" : "error";
+  const person = existing
+    ? await prisma.person.update({ where: { id: existing.id }, data: { name, instagramUrl: igUrl, status } })
+    : await prisma.person.create({ data: { name, linkedinUrl, instagramUrl: igUrl, avatarSeed: username, status, ownerId } });
 
   for (const [kind, res] of [["linkedin", li], ["instagram", ig]] as const) {
     const data = (res.data ?? undefined) as any;
@@ -90,15 +99,29 @@ export async function scrapePerson(input: CreatePersonInput & { force?: boolean 
   return toDTO((await getPersonRow(person.id))!);
 }
 
-export async function listPeople(): Promise<PersonDTO[]> {
-  const rows = await prisma.person.findMany({ include: { sources: true, analysis: true }, orderBy: { createdAt: "asc" } });
+export async function listPeople(vid: string | null): Promise<PersonDTO[]> {
+  const rows = await prisma.person.findMany({
+    where: visibleTo(vid),
+    include: { sources: true, analysis: true },
+    orderBy: [{ ownerId: { sort: "desc", nulls: "last" } }, { createdAt: "asc" }],
+  });
+  // List view: summary only — full personas are fetched per profile
   return rows.map((p) => {
-    const { sources, trace, ...dto } = toDTO(p);
-    return dto;
+    const { sources, trace, persona, ...dto } = toDTO(p);
+    return { ...dto, summary: persona?.summary };
   });
 }
 
-export async function getPerson(id: string): Promise<PersonDTO | null> {
+export async function getPerson(id: string, vid: string | null): Promise<PersonDTO | null> {
   const row = await getPersonRow(id);
-  return row ? toDTO(row) : null;
+  if (!row || (row.ownerId !== null && row.ownerId !== vid)) return null;
+  return toDTO(row);
+}
+
+/** Only the visitor who added a person may spend tokens on them; demo people are read-only. */
+export async function getOwnedPerson(id: string, vid: string | null) {
+  const row = await prisma.person.findUnique({ where: { id } });
+  if (!row || (row.ownerId !== null && row.ownerId !== vid)) return null;
+  if (row.ownerId === null || !vid) throw new ForbiddenError("Demo profiles are read-only — add your own person to try this.");
+  return row;
 }

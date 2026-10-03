@@ -16,7 +16,7 @@ console.log(`scraping ${list.length} people from ${file}${force ? " (force)" : "
 const results = await Promise.all(
   list.map(async (input, i) => {
     try {
-      const p = await scrapePerson({ ...input, force });
+      const p = await scrapePerson({ ...input, force }, null);
       const s = Object.fromEntries(p.sources!.map((x) => [x.kind, x.status]));
       const ig = p.sources!.find((x) => x.kind === "instagram")?.data as any;
       console.log(`${String(i + 1).padStart(2)} ${p.name.padEnd(28)} li=${s.linkedin} ig=${s.instagram} igName=${ig?.fullName ?? "-"} captions=${ig?.captions?.length ?? 0}`);

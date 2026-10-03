@@ -2,10 +2,12 @@
 import { prisma } from "../src/db";
 import { startRound } from "../src/dates";
 import { bus } from "../src/bus";
+import { serverLlm } from "../src/llm";
 
 const k = Number(process.argv.find((a) => /^\d+$/.test(a)) ?? 4);
 const force = process.argv.includes("--force");
-const { dateIds, pairs } = await startRound({ k, force });
+// Demo pool only (visitor null)
+const { dateIds, pairs } = await startRound({ k, force }, serverLlm(), null);
 console.log(`${pairs} pairs, running ${dateIds.length} dates`);
 let left = dateIds.length;
 await new Promise<void>((resolve) => {

@@ -30,8 +30,10 @@ enum ScrapeStatus {
 model Person {
   id           String       @id @default(cuid())
   name         String
-  linkedinUrl  String       @unique
-  instagramUrl String       @unique
+  linkedinUrl  String
+  instagramUrl String
+  /// null = the shared demo pool; otherwise the anonymous visitor who added this person
+  ownerId      String?
   avatarSeed   String
   status       PersonStatus @default(pending)
   sources      Source[]
@@ -41,6 +43,9 @@ model Person {
   debriefs     Debrief[]
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
+
+  @@index([linkedinUrl])
+  @@index([ownerId])
 }
 
 model Source {

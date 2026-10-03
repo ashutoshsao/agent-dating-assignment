@@ -31,9 +31,9 @@ function SendButton({ aId, bId }: { aId: string; bId: string }) {
   );
 }
 
-export function RankList({ personId, rows, compact }: { personId: string; rows: RankRow[]; compact?: boolean }) {
+export function RankList({ personId, rows, compact, canSend }: { personId: string; rows: RankRow[]; compact?: boolean; canSend?: boolean }) {
   return (
-    <ol className="grid gap-2">
+    <ol className="grid grid-cols-[minmax(0,1fr)] gap-2">
       {rows.map((r) => {
         const both = r.iWouldSeeAgain && r.theyWouldSeeAgain;
         const inner = (
@@ -64,7 +64,7 @@ export function RankList({ personId, rows, compact }: { personId: string; rows: 
             </div>
             {r.dated ? (
               <ScoreRing value={r.mutual!} size={44} />
-            ) : r.dateStatus !== "live" && r.dateStatus !== "scheduled" ? (
+            ) : canSend && r.dateStatus !== "live" && r.dateStatus !== "scheduled" ? (
               <SendButton aId={personId} bId={r.other.id} />
             ) : null}
           </>

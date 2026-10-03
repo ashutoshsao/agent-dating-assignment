@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { DateDTO, DateEvent } from "@dating/shared";
-import { API_URL } from "./api";
+import { streamUrl } from "./api";
 
 /** Merges live SSE events into the cached DateDTO; returns who is currently "typing". */
 export function useDateStream(id: string | undefined, enabled: boolean) {
@@ -10,7 +10,7 @@ export function useDateStream(id: string | undefined, enabled: boolean) {
 
   useEffect(() => {
     if (!id || !enabled) return;
-    const es = new EventSource(`${API_URL}/api/dates/${id}/stream`);
+    const es = new EventSource(streamUrl(`/api/dates/${id}/stream`));
     es.onmessage = (msg) => {
       const e = JSON.parse(msg.data) as DateEvent;
       if (e.type === "typing") return setTyping(e.speakerId);

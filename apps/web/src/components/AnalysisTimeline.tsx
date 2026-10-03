@@ -13,7 +13,7 @@ export const STEPS: { step: AnalysisStep; title: string }[] = [
 
 export function AnalysisTimeline({ trace, running }: { trace: Partial<Record<AnalysisStep, AnalysisTraceStep | "running">>; running: boolean }) {
   return (
-    <ol className="grid gap-3">
+    <ol className="grid grid-cols-[minmax(0,1fr)] gap-3">
       {STEPS.map(({ step, title }) => {
         const s = trace[step];
         const done = s && s !== "running";
@@ -53,7 +53,7 @@ function Notes({ text }: { text: string }) {
   const [open, setOpen] = useState(false);
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-2 pl-7">
-      <p className={cn("whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground", !open && "line-clamp-6")}>{clean(text)}</p>
+      <p className={cn("whitespace-pre-wrap break-words text-sm leading-relaxed text-muted-foreground", !open && "line-clamp-6")}>{clean(text)}</p>
       <button onClick={() => setOpen((o) => !o)} className="mt-1 text-xs text-foreground underline-offset-4 hover:underline">
         {open ? "Show less" : "Read the agent's notes"}
       </button>

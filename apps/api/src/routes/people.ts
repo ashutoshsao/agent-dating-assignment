@@ -1,56 +1,48 @@
 import { Router } from "express";
 import { CreatePersonInputSchema } from "@dating/shared";
-import { InvalidUrlError } from "../scrapers/normalize";
 import { openSse } from "../sse";
 import { analyzePerson } from "../agents/analyze";
-import { getPerson, InstagramPrivateError, listPeople, scrapePerson } from "../people";
+import { getOwnedPerson, getPerson, listPeople, scrapePerson } from "../people";
+import { resolveLlm } from "../llm";
+import { ForbiddenError, visitorId } from "../visitor";
 
 export const peopleRouter = Router();
 
 peopleRouter.post("/", async (req, res) => {
   const parsed = CreatePersonInputSchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: "invalid_input", issues: parsed.error.issues });
-  try {
-    res.json(await scrapePerson(parsed.data));
-  } catch (err) {
-    if (err instanceof InvalidUrlError) return res.status(400).json({ error: "invalid_url", message: err.message });
-    if (err instanceof InstagramPrivateError) return res.status(422).json({ error: "instagram_private", message: err.message });
-    console.error(err);
-    res.status(500).json({ error: "scrape_failed" });
-  }
+  const vid = visitorId(req);
+  if (!vid) throw new ForbiddenError("Missing visitor id");
+  res.json(await scrapePerson(parsed.data, vid));
 });
 
-peopleRouter.get("/", async (_req, res) => {
-  res.json(await listPeople());
+peopleRouter.get("/", async (req, res) => {
+  res.json(await listPeople(visitorId(req)));
 });
 
 peopleRouter.get("/:id", async (req, res) => {
-  const person = await getPerson(req.params.id);
+  const person = await getPerson(req.params.id, visitorId(req));
   if (!person) return res.status(404).json({ error: "not_found" });
   res.json(person);
 });
 
 peopleRouter.post("/:id/rescrape", async (req, res) => {
-  const person = await getPerson(req.params.id);
+  const vid = visitorId(req);
+  const person = await getOwnedPerson(req.params.id, vid);
   if (!person) return res.status(404).json({ error: "not_found" });
-  try {
-    res.json(await scrapePerson({ linkedinUrl: person.linkedinUrl, instagramUrl: person.instagramUrl, force: true }));
-  } catch (err) {
-    if (err instanceof InstagramPrivateError) return res.status(422).json({ error: "instagram_private" });
-    console.error(err);
-    res.status(500).json({ error: "scrape_failed" });
-  }
+  res.json(await scrapePerson({ linkedinUrl: person.linkedinUrl, instagramUrl: person.instagramUrl, force: true }, vid));
 });
 
 peopleRouter.post("/:id/analyze", async (req, res) => {
-  const person = await getPerson(req.params.id);
+  const person = await getOwnedPerson(req.params.id, visitorId(req));
   if (!person) return res.status(404).json({ error: "not_found" });
+  const llm = resolveLlm(req); // before opening the stream so a missing key is a plain 401
   const sse = openSse(res);
   try {
-    await analyzePerson(person.id, sse.send);
+    await analyzePerson(person.id, llm, sse.send);
   } catch (err) {
-    console.error(err);
-    sse.send({ type: "error", message: (err as Error).message });
+    console.error("analysis failed:", (err as Error).message);
+    sse.send({ type: "error", message: "Analysis failed — check your API key and model, then retry." });
   }
   sse.close();
 });

@@ -2,6 +2,7 @@ import { Moon, Sun } from "lucide-react";
 import { useState } from "react";
 import { NavLink, Outlet } from "react-router";
 import { cn } from "@/lib/utils";
+import { SettingsButton } from "@/components/SettingsDialog";
 
 function ThemeToggle() {
   const [dark, setDark] = useState(() => document.documentElement.classList.contains("dark"));
@@ -55,7 +56,8 @@ export function Layout() {
               </NavLink>
             ))}
           </nav>
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center gap-1">
+            <SettingsButton />
             <ThemeToggle />
           </div>
         </div>

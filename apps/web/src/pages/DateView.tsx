@@ -174,7 +174,7 @@ export default function DateView() {
         </section>
       )}
 
-      {(d.status === "done" || d.status === "error") && (
+      {d.owned && (d.status === "done" || d.status === "error") && (
         <div className="mt-8 flex justify-center">
           <Button variant="outline" className="rounded-full" onClick={() => rerun.mutate()}>
             <RotateCcw className="size-4" /> Send them on this date again
