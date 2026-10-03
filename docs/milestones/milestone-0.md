@@ -18,7 +18,7 @@ Paste a LinkedIn + public Instagram → an agent reads both → profile page (ne
 | Validation / types | Zod in `packages/shared` |
 | LLM | AI SDK (`ai` + `@ai-sdk/openai`) → `createOpenAI({ baseURL: DeepSeek }).chat('deepseek-chat')` — Chat Completions only, never the Responses API |
 | Avatars | DiceBear (generated from name — real photos are never stored or shown) |
-| Deploy | Vercel (web), Render (API), Neon (DB) |
+| Deploy | Vercel (web + API as one function), Neon (DB) |
 
 ## Data policy
 - Real people and real public links; text data only (bio, headline, experience, captions).
