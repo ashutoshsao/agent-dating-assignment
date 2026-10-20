@@ -18,7 +18,7 @@ app.get("/api/health", async (_req, res) => {
   const db = await prisma.$queryRaw`SELECT 1`.then(() => "ok" as const, () => "error" as const);
   const llm = process.env.DEEPSEEK_API_KEY ? await pingLlm(serverLlm()) : ("missing_key" as const);
   const body: Health = { ok: db === "ok", db, llm };
-  res.json(body);
+  res.status(body.ok ? 200 : 503).json(body); // 503 so the status page sees "down" from the code alone
 });
 
 // Endpoints that call an LLM run on the visitor's key, but still cap them per IP
